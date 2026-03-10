@@ -1,0 +1,131 @@
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { v4 as uuidv4 } from "uuid";
+
+
+const client = new DynamoDBClient({
+    // credentials: {
+    //     accessKeyId: process.env.ACCESS_KEY,
+    //     secretAccessKey: process.env.SECRET_KEY
+    // },
+    region: "eu-north-1",
+});
+
+const ddbClient = DynamoDBDocumentClient.from(client);
+
+// common properties
+const table = 'employee'
+
+// GET all item
+const getAllEmployees = async () => {
+    const params = {
+        TableName: table,
+    };
+    try {
+        const data = await ddbClient.send(new ScanCommand(params));
+        console.log(data);
+        return data.Items;
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    }
+}
+
+// GET item
+const getEmployee = async (id) => {
+    const params = {
+        TableName: table,
+        Key: {
+            'id': id
+        }
+    };
+    try {
+        const data = await ddbClient.send(new GetCommand(params));
+        console.log(data);
+        if (!data.Item) return null;
+        return {
+            id: data.Item.id,
+            name: data.Item.name,
+            department: data.Item.department
+        };
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    }
+}
+
+// CREATE item
+const createEmployee = async (name, department) => {
+    const params = {
+        TableName: table,
+        Item: {
+            'id': uuidv4(),
+            'name': name,
+            'department': department
+        }
+    };
+    try {
+        const data = await ddbClient.send(new PutCommand(params));
+        console.log(data);
+        return {
+            id: params.Item.id,
+            name: params.Item.name,
+            department: params.Item.department
+        };
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    }
+}
+
+
+// UPDATE item
+const updateEmployee = async (id, name, department) => {
+    const params = {
+        TableName: table,
+        Key: {
+            'id': id
+        },
+        UpdateExpression: "set #nm = :n, department= :d",
+        ExpressionAttributeNames: {
+            "#nm": "name"
+        },
+        ExpressionAttributeValues: {
+            ":n": name,
+            ":d": department
+        },
+        ReturnValues: "UPDATED_NEW"
+    };
+    try {
+        const data = await ddbClient.send(new UpdateCommand(params));
+        console.log(data);
+        return {
+            id,
+            name: data.Attributes.name,
+            department: data.Attributes.department
+        };
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    };
+};
+
+// DELETE item
+const deleteEmployee = async (id) => {
+    const params = {
+        TableName: table,
+        Key: {
+            'id': id
+        }
+    }
+    try {
+        const data = await ddbClient.send(new DeleteCommand(params));
+        console.log(data);
+        return data;
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    }
+}
+
+export { getAllEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee }
