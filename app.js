@@ -7,10 +7,11 @@ const app = express();
 app.use(express.json());
 
 // validation function
-const validateEmployee = (name, department) => {
-    if (!name || !department) return "All Fields required!";
+const validateEmployee = (name, department, salary) => {
+    if (!name || !department || !salary) return "All Fields required!";
     if (name.trim().length <= 3) return "Name should be more than 3 characters!";
     if (department.trim().length <= 1) return "Department should be more than 1 character!";
+    if (typeof salary !== "number" || Number.isNaN(salary) || salary <= 0) return "Salary must be a valid positive number"
     return null
 }
 
@@ -49,12 +50,12 @@ app.get('/api/employees/:id', async (req, res, next) => {
 app.post('/api/employees', async (req, res, next) => {
     if (!req.body) return res.status(400).json({ message: "Request body is required!" });
     // assigning and validating req values
-    const { name, department } = req.body;
-    const error = validateEmployee(name, department);
+    const { name, department, salary } = req.body;
+    const error = validateEmployee(name, department, salary);
     if (error) return res.status(400).json({ message: error });
     try {
         // creating employee
-        const employee = await createEmployee(name, department)
+        const employee = await createEmployee(name, department, salary)
         // res with created employee and status 201
         return res.status(201).json({   // 201 - Created 
             message: `Employee created successfully with ID ${employee.id}`,
@@ -70,15 +71,15 @@ app.put('/api/employees/:id', async (req, res, next) => {
     const id = req.params.id;
     if (!req.body) return res.status(400).json({ message: "Request body is required!" });
     // assigning and validating req values
-    const { name, department } = req.body;
-    const error = validateEmployee(name, department);
+    const { name, department, salary } = req.body;
+    const error = validateEmployee(name, department, salary);
     if (error) return res.status(400).json({ message: error });
     try {
         // finding employee, if not found return 404
         const employee = await getEmployee(id);
         if (!employee) return res.status(404).json({ message: "Employee not found!" });
         // updating employee data
-        const data = await updateEmployee(id, name, department);
+        const data = await updateEmployee(id, name, department, salary);
         // res with updated employee and status 200
         return res.status(200).json({
             message: "Employee updated successfully",

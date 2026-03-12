@@ -3,13 +3,7 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCo
 import { v4 as uuidv4 } from "uuid";
 
 
-const client = new DynamoDBClient({
-    // credentials: {
-    //     accessKeyId: process.env.ACCESS_KEY,
-    //     secretAccessKey: process.env.SECRET_KEY
-    // },
-    region: "eu-north-1",
-});
+const client = new DynamoDBClient({ region: "eu-north-1" });
 
 const ddbClient = DynamoDBDocumentClient.from(client);
 
@@ -46,7 +40,8 @@ const getEmployee = async (id) => {
         return {
             id: data.Item.id,
             name: data.Item.name,
-            department: data.Item.department
+            department: data.Item.department,
+            salary: data.Item.salary
         };
     } catch (error) {
         console.log(error);
@@ -55,13 +50,14 @@ const getEmployee = async (id) => {
 }
 
 // CREATE item
-const createEmployee = async (name, department) => {
+const createEmployee = async (name, department, salary) => {
     const params = {
         TableName: table,
         Item: {
             'id': uuidv4(),
-            'name': name,
-            'department': department
+            name,
+            department,
+            salary
         }
     };
     try {
@@ -70,7 +66,8 @@ const createEmployee = async (name, department) => {
         return {
             id: params.Item.id,
             name: params.Item.name,
-            department: params.Item.department
+            department: params.Item.department,
+            salary: params.Item.salary
         };
     } catch (error) {
         console.log(error);
@@ -80,19 +77,20 @@ const createEmployee = async (name, department) => {
 
 
 // UPDATE item
-const updateEmployee = async (id, name, department) => {
+const updateEmployee = async (id, name, department, salary) => {
     const params = {
         TableName: table,
         Key: {
             'id': id
         },
-        UpdateExpression: "set #nm = :n, department= :d",
+        UpdateExpression: "set #nm = :n, department= :d, salary= :s",
         ExpressionAttributeNames: {
             "#nm": "name"
         },
         ExpressionAttributeValues: {
             ":n": name,
-            ":d": department
+            ":d": department,
+            ":s": salary
         },
         ReturnValues: "UPDATED_NEW"
     };
@@ -102,7 +100,8 @@ const updateEmployee = async (id, name, department) => {
         return {
             id,
             name: data.Attributes.name,
-            department: data.Attributes.department
+            department: data.Attributes.department,
+            salary: data.Attributes.salary
         };
     } catch (error) {
         console.log(error);
