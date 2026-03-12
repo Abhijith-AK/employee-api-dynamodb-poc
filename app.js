@@ -1,5 +1,5 @@
 import express from "express";
-import { createEmployee, deleteEmployee, getAllEmployees, getEmployee, updateEmployee } from './employeeDB.js';
+import { createEmployee, deleteEmployee, getAllEmployees, getEmployee, getHighestSal, updateEmployee } from './employeeDB.js';
 
 const app = express();
 
@@ -8,7 +8,7 @@ app.use(express.json());
 
 // validation function
 const validateEmployee = (name, department, salary) => {
-    if (!name || !department || !salary) return "All Fields required!";
+    if (!name || !department || salary === undefined) return "All Fields required!";
     if (name.trim().length <= 3) return "Name should be more than 3 characters!";
     if (department.trim().length <= 1) return "Department should be more than 1 character!";
     if (typeof salary !== "number" || Number.isNaN(salary) || salary <= 0) return "Salary must be a valid positive number"
@@ -20,6 +20,7 @@ app.get('/api/employees', async (req, res, next) => {
     // res with all employees data
     try {
         const data = await getAllEmployees()
+        if (!data.length) return res.status(404).json({ message: "No employees found" });
         return res.status(200).json({   // 200 - OK
             message: "Employees retrieved successfully", data
         });
@@ -28,6 +29,23 @@ app.get('/api/employees', async (req, res, next) => {
     }
 });
 
+// Get Employee with highest salary with department
+app.get('/api/employees/highest-sal', async (req, res, next) => {
+    try {
+        const { dept: department } = req.query;
+        if (!department) return res.status(400).json({ message: "Department required" });
+        const data = await getHighestSal(department);
+        if (!data.length) return res.status(404).json({ message: "No employees found" });
+        // incase for geting highest salaried employee of all
+        // const employees = await getAllEmployees();
+        // const highestSalEmployee = employees.reduce((a, b) => a.salary > b.salary ? a : b);
+        return res.status(200).json({   // 200 - OK
+            message: `Employee with highest salary from ${department} department`, data: data[0]
+        });
+    } catch (error) {
+        next(error)
+    }
+});
 
 // GET an employee
 app.get('/api/employees/:id', async (req, res, next) => {

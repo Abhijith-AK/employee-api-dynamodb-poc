@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand, ScanCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
 
@@ -127,4 +127,24 @@ const deleteEmployee = async (id) => {
     }
 }
 
-export { getAllEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee }
+// GET Highest salary with department
+const getHighestSal = async (dept) => {
+    const command = new QueryCommand({
+        TableName: table,
+        IndexName: "dept-salary-index",
+        KeyConditionExpression: "department = :d",
+        ExpressionAttributeValues: { ":d": dept },
+        ScanIndexForward: false,
+        Limit: 1
+    });
+    try {
+        const data = await ddbClient.send(command);
+        console.log(data);
+        return data.Items
+    } catch (error) {
+        console.log(error);
+        throw (error);
+    }
+}
+
+export { getAllEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee, getHighestSal }
