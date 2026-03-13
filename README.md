@@ -116,4 +116,4 @@ id (String)
 
 * This project serves as a POC demonstrating integration between **Express APIs** and **AWS DynamoDB**.
 * Role-based authentication ensures only authorized users (Admin) can perform certain operations.
-* Tests are structure
+* Tests are structured for clarity and isolation, ensuring reliable test outcomes without affecting live data.
