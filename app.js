@@ -1,10 +1,43 @@
 import express from "express";
 import { createEmployee, deleteEmployee, getAllEmployees, getEmployee, getHighestSal, updateEmployee } from './employeeDB.js';
+import crypto from "crypto";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 
 // json middleware
 app.use(express.json());
+
+// decrypt func
+const decrypt = (encryptedText) => {
+    try {
+        const secretKey = process.env.SECRET_KEY;
+        const [ivHex, encrypted] = encryptedText.split(":");
+        const decipher = crypto.createDecipheriv(
+            "aes-256-cbc",
+            crypto.createHash("sha256").update(secretKey).digest(),
+            Buffer.from(ivHex, "hex")
+        );
+        let decrypted = decipher.update(encrypted, "hex", "utf8");
+        decrypted += decipher.final("utf8");
+        return decrypted;
+    }
+    catch (error) {
+        return null;
+    }
+}
+
+// authorisation middleware 
+const authMiddleware = (req, res, next) => {
+    const encryptedText = req.headers.role;
+    if (!encryptedText) return res.status(401).json({ message: "Role Missing" });
+    const role = decrypt(encryptedText);
+    if (!role) return res.status(400).json({ message: "Invalid encrypted role" })
+    if (role !== "admin") return res.status(403).json({ message: "Acces denied! Admin only." });
+    next();
+}
 
 // validation function
 const validateEmployee = (name, department, salary) => {
@@ -16,7 +49,7 @@ const validateEmployee = (name, department, salary) => {
 }
 
 // GET All employees
-app.get('/api/employees', async (req, res, next) => {
+app.get('/api/employees', authMiddleware, async (req, res, next) => {
     // res with all employees data
     try {
         const data = await getAllEmployees()
@@ -30,7 +63,7 @@ app.get('/api/employees', async (req, res, next) => {
 });
 
 // Get Employee with highest salary with department
-app.get('/api/employees/highest-sal', async (req, res, next) => {
+app.get('/api/employees/highest-sal', authMiddleware, async (req, res, next) => {
     try {
         const { dept: department } = req.query;
         if (!department) return res.status(400).json({ message: "Department required" });
@@ -48,7 +81,7 @@ app.get('/api/employees/highest-sal', async (req, res, next) => {
 });
 
 // GET an employee
-app.get('/api/employees/:id', async (req, res, next) => {
+app.get('/api/employees/:id', authMiddleware, async (req, res, next) => {
     const id = req.params.id;
     try {
         // finding employee, if not found return 404
@@ -65,7 +98,7 @@ app.get('/api/employees/:id', async (req, res, next) => {
 });
 
 // POST Creating employee
-app.post('/api/employees', async (req, res, next) => {
+app.post('/api/employees', authMiddleware, async (req, res, next) => {
     if (!req.body) return res.status(400).json({ message: "Request body is required!" });
     // assigning and validating req values
     const { name, department, salary } = req.body;
@@ -85,7 +118,7 @@ app.post('/api/employees', async (req, res, next) => {
 });
 
 // PUT Updating employee
-app.put('/api/employees/:id', async (req, res, next) => {
+app.put('/api/employees/:id', authMiddleware, async (req, res, next) => {
     const id = req.params.id;
     if (!req.body) return res.status(400).json({ message: "Request body is required!" });
     // assigning and validating req values
@@ -109,7 +142,7 @@ app.put('/api/employees/:id', async (req, res, next) => {
 });
 
 // DELETE Employee
-app.delete('/api/employees/:id', async (req, res, next) => {
+app.delete('/api/employees/:id', authMiddleware, async (req, res, next) => {
     const id = req.params.id;
     try {
         // finding employee, if not found return 404
