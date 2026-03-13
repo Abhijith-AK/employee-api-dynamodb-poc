@@ -1,19 +1,17 @@
 import express from "express";
 import { createEmployee, deleteEmployee, getAllEmployees, getEmployee, getHighestSal, updateEmployee } from './employeeDB.js';
 import crypto from "crypto";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { secretKey } from "./config/config.js";
 
 const app = express();
 
 // json middleware
 app.use(express.json());
 
-// decrypt func
-const decrypt = (encryptedText) => {
+// decrypt function
+export const decrypt = (encryptedText) => {
     try {
-        const secretKey = process.env.SECRET_KEY;
+        if (!encryptedText || !encryptedText.includes(":")) return null;
         const [ivHex, encrypted] = encryptedText.split(":");
         const decipher = crypto.createDecipheriv(
             "aes-256-cbc",
@@ -40,7 +38,7 @@ const authMiddleware = (req, res, next) => {
 }
 
 // validation function
-const validateEmployee = (name, department, salary) => {
+export const validateEmployee = (name, department, salary) => {
     if (!name || !department || salary === undefined) return "All Fields required!";
     if (name.trim().length <= 3) return "Name should be more than 3 characters!";
     if (department.trim().length <= 1) return "Department should be more than 1 character!";
@@ -161,7 +159,7 @@ app.delete('/api/employees/:id', authMiddleware, async (req, res, next) => {
 });
 
 // Handle unknown routes
-app.use((req, res) => {
+app.use((req, res, next) => {
     return res.status(404).json({
         message: "Route not found"
     });
@@ -177,4 +175,12 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => console.log(`Server started listening on port ${PORT}`));
+let server;
+
+if (process.env.NODE_ENV !== "test") {
+    server = app.listen(PORT, () => {
+        console.log(`Server started listening on port ${PORT}`);
+    });
+}
+
+export { server, app };

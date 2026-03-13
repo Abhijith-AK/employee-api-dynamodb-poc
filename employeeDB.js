@@ -1,14 +1,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand, ScanCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
-
+import { table } from "./config/config.js";
 
 const client = new DynamoDBClient({ region: "eu-north-1" });
 
 const ddbClient = DynamoDBDocumentClient.from(client);
-
-// common properties
-const table = 'employee'
 
 // GET all item
 const getAllEmployees = async () => {
@@ -17,7 +14,7 @@ const getAllEmployees = async () => {
     };
     try {
         const data = await ddbClient.send(new ScanCommand(params));
-        console.log(data);
+        // console.log(data);
         return data.Items;
     } catch (error) {
         console.log(error);
@@ -35,7 +32,7 @@ const getEmployee = async (id) => {
     };
     try {
         const data = await ddbClient.send(new GetCommand(params));
-        console.log(data);
+        // console.log(data);
         if (!data.Item) return null;
         return {
             id: data.Item.id,
@@ -62,7 +59,7 @@ const createEmployee = async (name, department, salary) => {
     };
     try {
         const data = await ddbClient.send(new PutCommand(params));
-        console.log(data);
+        // console.log(data);
         return {
             id: params.Item.id,
             name: params.Item.name,
@@ -96,7 +93,7 @@ const updateEmployee = async (id, name, department, salary) => {
     };
     try {
         const data = await ddbClient.send(new UpdateCommand(params));
-        console.log(data);
+        // console.log(data);
         return {
             id,
             name: data.Attributes.name,
@@ -119,7 +116,7 @@ const deleteEmployee = async (id) => {
     }
     try {
         const data = await ddbClient.send(new DeleteCommand(params));
-        console.log(data);
+        // console.log(data);
         return data;
     } catch (error) {
         console.log(error);
@@ -139,7 +136,7 @@ const getHighestSal = async (dept) => {
     });
     try {
         const data = await ddbClient.send(command);
-        console.log(data);
+        // console.log(data);
         return data.Items
     } catch (error) {
         console.log(error);
@@ -147,4 +144,17 @@ const getHighestSal = async (dept) => {
     }
 }
 
-export { getAllEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee, getHighestSal }
+// Delete all employees
+const deleteAllEmployee = async () => {
+    try {
+        const data = await getAllEmployees();
+        if (!data.length) return;
+        for (const e of data) {
+            await deleteEmployee(e.id);
+        };
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+export { getAllEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee, getHighestSal, deleteAllEmployee }
